@@ -11,7 +11,7 @@ class Twitter
     private $client;
     private $user_id;
     private $screen_name;
-    private $tweet_timestamps = [];
+    private $tweet_deck = [];
 
     private function __construct()
     {
@@ -65,20 +65,23 @@ class Twitter
 
         if (! $res) return 'Invalid response from Twitter.';
 
-        $a_followers = (json_decode($res->getBody())->users);
-        
-        $follower_ids = array_column($a_followers, 'id');
-        
-        dd($follower_ids);
-
+        return array_column(json_decode($res->getBody())->users, 'id');
     }
     
     public function fetchRecentTweets()
     {
+        $followers = $this->fetchActiveFollowers();
+        array_map([$this, 'fetchTweetsByUserID'], $followers);
+
+        return $this->tweet_deck;
+    }
+
+    private function fetchTweetsByUserID($user_id)
+    {
         try {
             $res = $this->client->get('statuses/user_timeline.json', [
                 'query' => [
-                    'user_id' => $this->user_id,
+                    'user_id' => $user_id,
                     'count'   => 5
                 ],
                 'auth' => 'oauth'
@@ -88,13 +91,7 @@ class Twitter
         }
         
         if (! $res) return 'Invalid response from Twitter.';
-        
-        $tweets = json_decode($res->getBody());
 
-        foreach ($tweets as $tweet) {
-            array_push($this->tweet_timestamps, $tweet->created_at);
-        }
-        
-        dd($this->tweet_timestamps);
+        $this->tweet_deck[$user_id] = json_decode($res->getBody());
     }
 }
