@@ -8,16 +8,28 @@ use \Illuminate\Http\Request;
 
 class HomeController extends Controller
 {
+    /**
+     * Homepage to get the inputs
+     * 
+     * @return html
+     */
     public function index()
     {
         return view('home.index');
     }
 
+    /**
+     * Get the best time to tweet
+     * 
+     * @param Request $request
+     * @return json
+     */
     public function fetch(Request $request)
     {
         $user_id     = $request->input('user_id');
         $screen_name = $request->input('screen_name');
 
+        // Validate and sanitize the inputs
         if (empty($user_id) && empty($screen_name)) {
             return response()->json([
                 "status" => false,
@@ -42,6 +54,7 @@ class HomeController extends Controller
             $twitter = Twitter::initFromUserID($user_id);
         }
         
+        // Fetch and map recent tweets against followers
         $tweets = $twitter->fetchRecentTweets();
         if (! is_array($tweets)) {
             return response()->json([
@@ -50,7 +63,8 @@ class HomeController extends Controller
             ]);
         }
 
+        // Process data to return the best hour and day of week to tweet
         $churner = new DataChurner($tweets);
-        return $churner->churn();
+        return response()->json($churner->churn());
     }
 }

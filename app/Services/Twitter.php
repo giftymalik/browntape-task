@@ -13,6 +13,9 @@ class Twitter
     private $screen_name;
     private $tweet_deck = [];
 
+    /**
+     * Initialize Twitter adapter using the environment configurations
+     */
     private function __construct()
     {
         $handler_stack = HandlerStack::create();
@@ -32,6 +35,12 @@ class Twitter
         ]);
     }
 
+    /**
+     * Initialize Twitter adapter with User's numeric ID
+     * 
+     * @param int $user_id
+     * @return \App\Services\Twitter
+     */
     public static function initFromUserID(int $user_id)
     {
         $twitter = new Twitter();
@@ -40,6 +49,12 @@ class Twitter
         return $twitter;
     }
 
+    /**
+     * Initialize Twitter adapter with User's screen name
+     * 
+     * @param string $screen_name
+     * @return \App\Services\Twitter
+     */
     public static function initFromScreenName(string $screen_name)
     {
         $twitter = new Twitter();
@@ -48,7 +63,25 @@ class Twitter
         return $twitter;
     }
 
-    public function fetchActiveFollowers()
+    /**
+     * Fetch raw recent tweets against followers' ids
+     * 
+     * @return array
+     */
+    public function fetchRecentTweets()
+    {
+        $followers = $this->fetchActiveFollowers();
+        array_map([$this, 'fetchTweetsByUserID'], $followers);
+
+        return $this->tweet_deck;
+    }
+    
+    /**
+     * Fetch user ids of the followers
+     * 
+     * @return mixed
+     */
+    private function fetchActiveFollowers()
     {
         try {
             $res = $this->client->get('followers/list.json', [
@@ -60,22 +93,18 @@ class Twitter
                 'auth' => 'oauth'
             ]);
         } catch (\Exception $e) {
-            return $e->getMessage();
+            echo 'Invalid response from Twitter. Try again.';
+            die();
         }
-
-        if (! $res) return 'Invalid response from Twitter.';
 
         return array_column(json_decode($res->getBody())->users, 'id');
     }
-    
-    public function fetchRecentTweets()
-    {
-        $followers = $this->fetchActiveFollowers();
-        array_map([$this, 'fetchTweetsByUserID'], $followers);
 
-        return $this->tweet_deck;
-    }
-
+    /**
+     * Fetch recent tweets of provided user
+     * 
+     * @param type $user_id
+     */
     private function fetchTweetsByUserID($user_id)
     {
         try {
@@ -87,10 +116,8 @@ class Twitter
                 'auth' => 'oauth'
             ]);
         } catch (Exception $e) {
-            return $e->getMessage();
+            // Log exception if required
         }
-        
-        if (! $res) return 'Invalid response from Twitter.';
 
         $this->tweet_deck[$user_id] = json_decode($res->getBody());
     }
