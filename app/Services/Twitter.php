@@ -55,7 +55,7 @@ class Twitter
                 'query' => [
                     'user_id'     => $this->user_id,
                     'screen_name' => $this->screen_name,
-                    'count'       => env('TWITTER_FOLLOWERS_TO_PROCESS')
+                    'count'       => env('TWITTER_FOLLOWERS_TO_PROCESS', 5)
                 ],
                 'auth' => 'oauth'
             ]);
@@ -82,7 +82,7 @@ class Twitter
             $res = $this->client->get('statuses/user_timeline.json', [
                 'query' => [
                     'user_id' => $user_id,
-                    'count'   => env('TWEETS_PER_FOLLOWER_TO_PROCESS')
+                    'count'   => env('TWEETS_PER_FOLLOWER_TO_PROCESS', 5)
                 ],
                 'auth' => 'oauth'
             ]);
