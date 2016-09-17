@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use \App\Services\Twitter;
+use \App\Services\DataChurner;
 use \Illuminate\Http\Request;
 
 class HomeController extends Controller
@@ -28,19 +29,28 @@ class HomeController extends Controller
             $twitter = Twitter::initFromScreenName(
                 strtolower($screen_name)
             );
-            return $twitter->fetchRecentTweets();
+        } else {
+            $user_id = (int) $request->get('user_id');
+
+            if (is_null($user_id)) {
+                return response()->json([
+                    "status" => false,
+                    "error"  => "Provided User ID is invalid. Kindly retry with a valid numeric ID."
+                ]);
+            }
+
+            $twitter = Twitter::initFromUserID($user_id);
         }
-
-        $user_id = (int) $request->get('user_id');
-
-        if (is_null($user_id)) {
+        
+        $tweets = $twitter->fetchRecentTweets();
+        if (! is_array($tweets)) {
             return response()->json([
                 "status" => false,
-                "error"  => "Provided User ID is invalid. Kindly retry with a valid numeric ID."
+                "error"  => "Invalid response from Twitter"
             ]);
         }
 
-        $twitter = Twitter::initFromUserID($user_id);
-        return $twitter->fetchRecentTweets();
+        $churner = new DataChurner($tweets);
+        return $churner->churn();
     }
 }
